@@ -48,11 +48,51 @@ export function monthlyFlow(transactions = [], date = new Date()) {
   return { income, expense, net: income + expense };
 }
 
+/**
+ * Sum signed transactions over a rolling window ending on `endDate` (inclusive).
+ * Default window is 30 days. Useful for "last 30 days" dashboard cards that
+ * stay meaningful regardless of where you are in the calendar month.
+ */
+export function rollingFlow(transactions = [], days = 30, endDate = new Date()) {
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end);
+  start.setDate(start.getDate() - days + 1);
+  start.setHours(0, 0, 0, 0);
+
+  let income = 0;
+  let expense = 0;
+  for (const t of transactions) {
+    const d = fromISO(t.date);
+    if (d < start || d > end) continue;
+    const amt = Number(t.amount) || 0;
+    if (amt >= 0) income += amt;
+    else expense += amt;
+  }
+  return { income, expense, net: income + expense, start, end };
+}
+
 /** Compare current month against previous month, return percent change. */
 export function monthOverMonth(transactions = [], date = new Date()) {
   const prev = new Date(date.getFullYear(), date.getMonth() - 1, 1);
   const cur = monthlyFlow(transactions, date);
   const last = monthlyFlow(transactions, prev);
+  return {
+    current: cur,
+    previous: last,
+    incomeDelta: pctChange(last.income, cur.income),
+    expenseDelta: pctChange(Math.abs(last.expense), Math.abs(cur.expense)),
+    netDelta: pctChange(last.net, cur.net),
+  };
+}
+
+/** Rolling 30-day vs prior 30-day comparison. */
+export function rollingOverRolling(transactions = [], days = 30, endDate = new Date()) {
+  const end = new Date(endDate);
+  const prevEnd = new Date(end);
+  prevEnd.setDate(prevEnd.getDate() - days);
+  const cur = rollingFlow(transactions, days, end);
+  const last = rollingFlow(transactions, days, prevEnd);
   return {
     current: cur,
     previous: last,

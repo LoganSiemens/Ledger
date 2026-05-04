@@ -7,10 +7,10 @@ import TxRow from '../common/TxRow';
 import { useAccounts, useTransactions } from '../../hooks/useFinanceData';
 import {
   netWorth,
-  monthOverMonth,
+  rollingOverRolling,
   recentTransactions,
 } from '../../utils/calculations';
-import { greeting, monthLabel } from '../../utils/dates';
+import { greeting } from '../../utils/dates';
 import { loadSampleData } from '../../utils/sampleData';
 
 export default function Dashboard() {
@@ -18,7 +18,7 @@ export default function Dashboard() {
   const { transactions } = useTransactions();
 
   const total = useMemo(() => netWorth(accounts), [accounts]);
-  const mom = useMemo(() => monthOverMonth(transactions), [transactions]);
+  const mom = useMemo(() => rollingOverRolling(transactions, 30), [transactions]);
   const recent = useMemo(() => recentTransactions(transactions, 6), [transactions]);
   const accountById = useMemo(
     () => Object.fromEntries(accounts.map((a) => [a.id, a])),
@@ -50,10 +50,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <PageHeader
-        title={`${greeting()}.`}
-        subtitle={monthLabel()}
-      />
+      <PageHeader title={`${greeting()}.`} subtitle="Last 30 days" />
 
       <section style={styles.hero}>
         <div style={styles.heroLabel}>Net worth</div>
@@ -123,7 +120,7 @@ function FlowCard({ label, value, delta, tone, signed = false, invertDelta = fal
         <div style={{ ...styles.delta, color: deltaColor }}>
           <Arrow size={13} strokeWidth={2} />
           <span className="tnum">{Math.abs(delta).toFixed(0)}%</span>
-          <span style={{ color: 'var(--ink-subtle)' }}>vs last month</span>
+          <span style={{ color: 'var(--ink-subtle)' }}>vs prior 30d</span>
         </div>
       )}
     </div>
