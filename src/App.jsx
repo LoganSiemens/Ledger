@@ -8,7 +8,9 @@ import Transactions from './components/Transactions/Transactions';
 import Goals from './components/Goals/Goals';
 import Bills from './components/Bills/Bills';
 import Settings from './components/Settings/Settings';
+import Unlock from './components/Unlock/Unlock';
 import { useStorage } from './hooks/useStorage';
+import { useApiKey } from './hooks/useApiKey';
 
 const TABS = {
   dashboard: Dashboard,
@@ -22,11 +24,20 @@ const TABS = {
 
 export default function App() {
   const [tab, setTab] = useStorage('ui:tab', 'dashboard');
+  const [apiKey] = useApiKey();
   const Active = TABS[tab] || Dashboard;
 
   useEffect(() => {
     document.title = `Ledger · ${tab[0].toUpperCase()}${tab.slice(1)}`;
   }, [tab]);
+
+  if (!apiKey) {
+    return (
+      <ErrorBoundary>
+        <Unlock />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>

@@ -2,20 +2,18 @@
 
 > A calm, considered personal finance journal. Cream and clay, Fraunces and Inter,
 > tabular numbers and breathing room. Installs straight to your home screen — no app
-> store, no account, no syncing.
+> store.
 
-The brand mark is **◐**. Your data lives on your device.
+The brand mark is **◐**. Manual entries stay on your device. Linked banks live in
+Supabase (access tokens only) and pull through Plaid.
 
 ---
 
 ## Status
 
-This repo is **Phase 1**: a deployable app shell with the design system, storage
-abstraction, export/import, PWA install, and offline-after-first-load. The feature
-tabs (Dashboard, Calendar, Accounts, Transactions, Goals, Bills) render polished
-empty states. Subsequent phases fill them in.
-
-See [Roadmap](#roadmap) below.
+Phase 1 (shell) and Phase 2 (accounts + transactions + dashboard) are shipped.
+Phase 2.5 adds optional bank linking via Plaid + Supabase + Netlify Functions.
+Calendar, Goals, Bills are still polished empty states (Phase 3+).
 
 ---
 
@@ -148,10 +146,90 @@ These are regenerated on every `npm run build` (via `prebuild`) and are git-igno
 
 ---
 
+## Bank linking (optional, via Plaid)
+
+Ledger can pull balances and transactions from real banks via Plaid. This is
+**opt-in** — the app works fully without it as a manual journal.
+
+### Architecture
+
+- **Netlify Functions** (`netlify/functions/*.mjs`) sit between the client and
+  Plaid + Supabase. They never run in the browser, so Plaid secrets stay server-side.
+- **Supabase** stores one row per linked bank in `plaid_items` — institution name,
+  Plaid `item_id`, the long-lived `access_token`, and a `sync_cursor` for incremental
+  fetches. Transactions themselves never live in Supabase; they're synced into the
+  client's localStorage on each pull.
+- **A shared `LEDGER_API_SECRET`** gates every API call. The client stores it in
+  localStorage after a one-time unlock screen; the server validates against the
+  env var. Anyone hitting your Netlify URL without the secret gets `401`.
+
+### Required environment variables (Netlify → Site configuration → Environment variables)
+
+| Key | Notes |
+| --- | --- |
+| `PLAID_CLIENT_ID` | from Plaid dashboard → Team Settings → Keys |
+| `PLAID_SECRET` | the Sandbox / Development / Production secret matching `PLAID_ENV` |
+| `PLAID_ENV` | `sandbox`, `development`, or `production` |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
+| `SUPABASE_SERVICE_KEY` | the `service_role` JWT (never the `anon` key) |
+| `LEDGER_API_SECRET` | a long random string; generates the Bearer token gate |
+
+### Required Supabase schema
+
+Run once in Supabase → SQL Editor:
+
+```sql
+create extension if not exists pgcrypto;
+
+create table if not exists plaid_items (
+  id uuid primary key default gen_random_uuid(),
+  institution_id text,
+  institution_name text,
+  access_token text not null,
+  item_id text unique not null,
+  sync_cursor text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists plaid_items_item_id_idx on plaid_items(item_id);
+```
+
+### How linking works (user flow)
+
+1. First open: app shows the **Unlock** screen → paste `LEDGER_API_SECRET` → stored in
+   localStorage from then on.
+2. Settings → **Linked banks → Link a bank**.
+3. Plaid Link UI opens. In Sandbox, log in to any institution with `user_good` /
+   `pass_good`.
+4. On success, the client posts the public token to `/api/exchange-token`; the
+   server exchanges it for an access token, stores it, then `/api/sync` runs.
+5. Accounts and transactions appear in the app. Tap **Sync now** later for fresh data.
+
+### Going from Sandbox → real bank
+
+1. In Plaid dashboard, request **Development** access (free, ~1-day review).
+2. Once approved, copy your Development secret into `PLAID_SECRET` and change
+   `PLAID_ENV` to `development` in Netlify env vars.
+3. Trigger a redeploy. Existing Sandbox links won't carry over — re-link.
+
+### API endpoints (all require `Authorization: Bearer <LEDGER_API_SECRET>`)
+
+| Method | Path | Use |
+| --- | --- | --- |
+| `POST` | `/api/link-token` | mint a Plaid Link token for the client |
+| `POST` | `/api/exchange-token` | swap a Plaid public token for a stored access token |
+| `GET`  | `/api/items` | list linked banks |
+| `DELETE` | `/api/items?item_id=…` | unlink a bank (revokes via Plaid + deletes row) |
+| `POST` | `/api/sync` | pull latest accounts + incremental transactions |
+
+---
+
 ## Roadmap
 
 - **Phase 1 — shell** ✅ Project setup, storage, PWA install, offline, design system, settings
-- **Phase 2 — core data** Accounts, Transactions, Dashboard with totals + cash flow
+- **Phase 2 — core data** ✅ Accounts, Transactions, Dashboard with totals + cash flow
+- **Phase 2.5 — bank linking** ✅ Plaid + Supabase + Netlify Functions, optional opt-in
 - **Phase 3 — calendar & bills** Swipeable months, week view, recurring markers, "next 30 days"
 - **Phase 4 — goals & budgets** Target dates, on-track status, per-category budgets
 - **Phase 5 — trends & power tools** Recharts views, search/filter, bulk-edit, tags, CSV import

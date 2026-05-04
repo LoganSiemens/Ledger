@@ -180,3 +180,11 @@ a {
     bottom: calc(var(--safe-bottom) + 76px);
   }
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 900ms linear infinite;
+}
