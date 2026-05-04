@@ -46,24 +46,28 @@ generate the PNG icon set from `public/icon.svg`.
 
 ---
 
-## Deploy to Vercel
+## Deploy to Netlify
 
-Ledger is configured to deploy as-is.
+Ledger is configured to deploy as-is. `netlify.toml` already declares the build
+command, publish directory, Node version, and PWA cache headers.
 
 1. Push this repo to GitHub.
-2. Go to https://vercel.com/new and import the repo.
-3. Vercel auto-detects Vite. Leave defaults — `vercel.json` already specifies build
-   command and output directory.
-4. Click **Deploy**. You get an HTTPS URL like `https://ledger-xyz.vercel.app`.
+2. Go to https://app.netlify.com/start → **Import an existing project** → pick the repo.
+3. Netlify reads `netlify.toml`. Leave the build settings alone.
+4. Click **Deploy site**. You get an HTTPS URL like `https://ledger-xyz.netlify.app`.
 
 That HTTPS URL is what you install on your phone. The PWA only works over HTTPS.
 
-### Deploy to Netlify (alternative)
+> **Tip:** under **Site settings → Domain management → Production branch**, set the
+> branch you want to deploy from (e.g. `main` or your feature branch).
+
+### Deploy to Vercel (alternative)
+
+`vercel.json` is also included if you prefer Vercel.
 
 1. Push to GitHub.
-2. https://app.netlify.com/start → import repo.
-3. Build command: `npm run build`. Publish directory: `dist`.
-4. Deploy. Done.
+2. https://vercel.com/new → import the repo.
+3. Vercel auto-detects Vite. Click **Deploy**.
 
 ---
 
