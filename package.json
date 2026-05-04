@@ -1,0 +1,28 @@
+{
+  "name": "ledger",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A calm, considered personal finance PWA.",
+  "scripts": {
+    "dev": "vite",
+    "prebuild": "pwa-assets-generator",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "generate-pwa-assets": "pwa-assets-generator"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "^5.0.21",
+    "@fontsource-variable/inter": "^5.0.18",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.13.3"
+  },
+  "devDependencies": {
+    "@vite-pwa/assets-generator": "^0.2.6",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11",
+    "vite-plugin-pwa": "^0.21.1"
+  }
+}
