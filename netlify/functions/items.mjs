@@ -1,27 +1,24 @@
 import { plaidClient } from './_shared/plaid.mjs';
 import { supabaseAdmin } from './_shared/supabase.mjs';
-import { requireApiKey, jsonResponse, errorResponse } from './_shared/auth.mjs';
+import { requireApiKey, jsonResponse, errorResponse, safeHandler } from './_shared/auth.mjs';
 
-export default async (req) => {
+export default safeHandler(async (req) => {
   const denied = requireApiKey(req);
   if (denied) return denied;
-  const supabase = supabaseAdmin();
 
-  if (req.method === 'GET') {
-    try {
+  try {
+    const supabase = supabaseAdmin();
+
+    if (req.method === 'GET') {
       const { data, error } = await supabase
         .from('plaid_items')
         .select('item_id, institution_id, institution_name, created_at, updated_at')
         .order('created_at', { ascending: true });
       if (error) throw error;
       return jsonResponse({ items: data || [] });
-    } catch (err) {
-      return errorResponse(err);
     }
-  }
 
-  if (req.method === 'DELETE') {
-    try {
+    if (req.method === 'DELETE') {
       const url = new URL(req.url);
       const itemId = url.searchParams.get('item_id');
       if (!itemId) return jsonResponse({ error: 'item_id required' }, 400);
@@ -46,10 +43,10 @@ export default async (req) => {
       if (delErr) throw delErr;
 
       return jsonResponse({ ok: true });
-    } catch (err) {
-      return errorResponse(err);
     }
-  }
 
-  return jsonResponse({ error: 'method not allowed' }, 405);
-};
+    return jsonResponse({ error: 'method not allowed' }, 405);
+  } catch (err) {
+    return errorResponse(err);
+  }
+});

@@ -1,8 +1,8 @@
 import { Products, CountryCode } from 'plaid';
 import { plaidClient } from './_shared/plaid.mjs';
-import { requireApiKey, jsonResponse, errorResponse } from './_shared/auth.mjs';
+import { requireApiKey, jsonResponse, errorResponse, safeHandler } from './_shared/auth.mjs';
 
-export default async (req) => {
+export default safeHandler(async (req) => {
   if (req.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405);
   const denied = requireApiKey(req);
   if (denied) return denied;
@@ -20,4 +20,4 @@ export default async (req) => {
   } catch (err) {
     return errorResponse(err);
   }
-};
+});

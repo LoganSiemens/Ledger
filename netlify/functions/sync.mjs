@@ -1,6 +1,6 @@
 import { plaidClient } from './_shared/plaid.mjs';
 import { supabaseAdmin } from './_shared/supabase.mjs';
-import { requireApiKey, jsonResponse, errorResponse } from './_shared/auth.mjs';
+import { requireApiKey, jsonResponse, errorResponse, safeHandler } from './_shared/auth.mjs';
 
 /**
  * Pulls latest accounts + incremental transactions for every linked item.
@@ -19,7 +19,7 @@ import { requireApiKey, jsonResponse, errorResponse } from './_shared/auth.mjs';
  * Sign convention: Plaid returns expenses as positive numbers; we flip them so
  * money OUT is negative and money IN is positive (matches the manual-entry model).
  */
-export default async (req) => {
+export default safeHandler(async (req) => {
   if (req.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405);
   const denied = requireApiKey(req);
   if (denied) return denied;
@@ -104,7 +104,7 @@ export default async (req) => {
   } catch (err) {
     return errorResponse(err);
   }
-};
+});
 
 /**
  * Map Plaid's personal-finance category to Ledger's flat list.

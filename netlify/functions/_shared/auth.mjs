@@ -44,6 +44,21 @@ export function errorResponse(err, status = 500) {
     err?.response?.data?.error_message ||
     err?.message ||
     (typeof err === 'string' ? err : 'unknown error');
-  console.error('[api]', status, msg, err?.response?.data || '');
+  console.error('[api]', status, msg, err?.response?.data || err?.stack || '');
   return jsonResponse({ error: msg }, status);
+}
+
+/**
+ * Wraps a handler so any uncaught error becomes a JSON 500 instead of a 502.
+ * Without this, exceptions thrown during cold start (missing env, misbehaving
+ * SDK) bubble up and Netlify returns an opaque 502.
+ */
+export function safeHandler(handler) {
+  return async (req, ctx) => {
+    try {
+      return await handler(req, ctx);
+    } catch (err) {
+      return errorResponse(err);
+    }
+  };
 }
