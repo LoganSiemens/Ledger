@@ -3,6 +3,7 @@ const items = [
   { id: 'calendar', label: 'Calendar' },
   { id: 'transactions', label: 'Transactions' },
   { id: 'accounts', label: 'Accounts' },
+  { id: 'budgets', label: 'Budgets' },
   { id: 'goals', label: 'Goals' },
   { id: 'bills', label: 'Bills' },
   { id: 'settings', label: 'Settings' },

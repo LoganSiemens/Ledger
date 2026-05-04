@@ -1,25 +1,27 @@
-import { LayoutDashboard, Calendar, Wallet, ListTree, Target, Receipt, Settings } from 'lucide-react';
+import { LayoutDashboard, Calendar, ListTree, PiggyBank, Menu } from 'lucide-react';
 
 const items = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-  { id: 'calendar', label: 'Calendar', icon: Calendar },
   { id: 'transactions', label: 'Activity', icon: ListTree },
-  { id: 'accounts', label: 'Accounts', icon: Wallet },
-  { id: 'more', label: 'More', icon: Settings },
+  { id: 'budgets', label: 'Budgets', icon: PiggyBank },
+  { id: 'calendar', label: 'Calendar', icon: Calendar },
+  { id: 'more', label: 'More', icon: Menu },
 ];
+
+const SECONDARY_TABS = ['accounts', 'goals', 'bills', 'settings'];
 
 export default function BottomNav({ tab, onChange }) {
   return (
     <nav style={styles.bar} aria-label="Primary">
       {items.map((it) => {
         const Icon = it.icon;
-        const active = tab === it.id || (it.id === 'more' && ['settings', 'goals', 'bills'].includes(tab));
+        const active = tab === it.id || (it.id === 'more' && SECONDARY_TABS.includes(tab));
         return (
           <button
             key={it.id}
             className="tap"
             style={{ ...styles.btn, color: active ? 'var(--ink)' : 'var(--ink-subtle)' }}
-            onClick={() => onChange(it.id === 'more' ? 'settings' : it.id)}
+            onClick={() => onChange(it.id)}
             aria-current={active ? 'page' : undefined}
           >
             <Icon size={22} strokeWidth={active ? 2 : 1.5} />

@@ -219,3 +219,38 @@ function clampDay(d) {
   const n = Number(d) || 1;
   return Math.max(1, Math.min(31, Math.round(n)));
 }
+
+export function useBudgets() {
+  const [budgets, setBudgets] = useStorage('budgets', {});
+
+  const setBudget = useCallback(
+    (category, amount) => {
+      setBudgets((prev) => {
+        const next = { ...(prev || {}) };
+        const v = Number(amount) || 0;
+        if (v <= 0) delete next[category];
+        else next[category] = v;
+        return next;
+      });
+    },
+    [setBudgets],
+  );
+
+  const setAll = useCallback(
+    (map) => setBudgets(map || {}),
+    [setBudgets],
+  );
+
+  const clearBudget = useCallback(
+    (category) => {
+      setBudgets((prev) => {
+        const next = { ...(prev || {}) };
+        delete next[category];
+        return next;
+      });
+    },
+    [setBudgets],
+  );
+
+  return { budgets: budgets || {}, setBudget, setAll, clearBudget };
+}

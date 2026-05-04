@@ -183,6 +183,108 @@ export function spendingByCategory(transactions = [], days = 30, endDate = new D
 }
 
 /**
+ * Per-category spending for a calendar month (current month by default).
+ * Returns a plain { Housing: 234.5, Food: 102.0 } map.
+ */
+export function spendingByCategoryThisMonth(transactions = [], date = new Date()) {
+  const map = {};
+  for (const t of transactions) {
+    if (!isFlowTx(t)) continue;
+    const amt = Number(t.amount) || 0;
+    if (amt >= 0) continue;
+    const d = fromISO(t.date);
+    if (!isSameMonth(d, date)) continue;
+    const cat = t.category || 'Other';
+    map[cat] = (map[cat] || 0) + -amt;
+  }
+  return map;
+}
+
+/**
+ * Compute suggested per-category budgets from the last 3 full months of
+ * spending plus optional inputs:
+ *   - bills:  array of recurring bills; their summed monthly amount is the
+ *             floor for the Bills category.
+ *   - goals:  array of goals with `targetDate`; the suggested monthly
+ *             contribution is added to the suggested 'Savings' target
+ *             (returned separately, not as a budget).
+ *
+ * Categories with no spending and no input get no suggestion.
+ */
+export function suggestBudgets(transactions = [], bills = [], goals = [], today = new Date()) {
+  const months = [];
+  for (let i = 1; i <= 3; i += 1) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    months.push(spendingByCategoryThisMonth(transactions, d));
+  }
+  const cats = new Set();
+  months.forEach((m) => Object.keys(m).forEach((k) => cats.add(k)));
+
+  const suggestions = {};
+  for (const cat of cats) {
+    const totals = months.map((m) => m[cat] || 0);
+    const nonZero = totals.filter((v) => v > 0);
+    if (nonZero.length === 0) continue;
+    const avg = nonZero.reduce((s, v) => s + v, 0) / nonZero.length;
+    // Round to nearest $5 for tidier numbers.
+    suggestions[cat] = Math.max(5, Math.round(avg / 5) * 5);
+  }
+
+  // Bills floor: ensure Bills budget covers the known recurring monthly total.
+  const billsMonthly = bills.reduce(
+    (sum, b) => sum + (Number(b.amount) || 0),
+    0,
+  );
+  if (billsMonthly > 0) {
+    suggestions.Bills = Math.max(suggestions.Bills || 0, Math.round(billsMonthly / 5) * 5);
+  }
+
+  // Savings target from goals — informational, not a category budget.
+  let savingsTarget = 0;
+  for (const g of goals) {
+    if (!g.targetDate) continue;
+    const prog = goalProgress(g, today);
+    if (prog.suggestedMonthly && prog.suggestedMonthly > 0) {
+      savingsTarget += prog.suggestedMonthly;
+    }
+  }
+
+  return { suggestions, savingsTarget: Math.round(savingsTarget / 5) * 5 };
+}
+
+/**
+ * Per-category budget status for a given month.
+ * Returns [{ category, budget, spent, remaining, pct, state }, ...].
+ * state: 'good' (<80%), 'warn' (80-100%), 'over' (>100%)
+ */
+export function budgetStatus(budgets = {}, transactions = [], date = new Date()) {
+  const spent = spendingByCategoryThisMonth(transactions, date);
+  const out = [];
+  // All categories that have either a budget or any spend
+  const cats = new Set([...Object.keys(budgets), ...Object.keys(spent)]);
+  for (const cat of cats) {
+    const budget = Number(budgets[cat]) || 0;
+    const used = Number(spent[cat]) || 0;
+    const remaining = budget - used;
+    const pct = budget > 0 ? used / budget : 0;
+    let state = 'good';
+    if (budget > 0) {
+      if (pct > 1) state = 'over';
+      else if (pct >= 0.8) state = 'warn';
+    }
+    out.push({ category: cat, budget, spent: used, remaining, pct, state });
+  }
+  // Sort: over-budget first, then by % descending, then unbudgeted at end.
+  return out.sort((a, b) => {
+    if (a.state === 'over' && b.state !== 'over') return -1;
+    if (b.state === 'over' && a.state !== 'over') return 1;
+    if (a.budget && !b.budget) return -1;
+    if (b.budget && !a.budget) return 1;
+    return b.pct - a.pct;
+  });
+}
+
+/**
  * Goal progress + on-track status.
  * onTrack: null when there's no targetDate; otherwise true/false.
  * suggestedMonthly: null when no targetDate; otherwise the contribution needed

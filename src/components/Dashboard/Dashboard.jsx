@@ -5,6 +5,8 @@ import Empty from '../common/Empty';
 import Money from '../common/Money';
 import TxRow from '../common/TxRow';
 import SpendingChart from './SpendingChart';
+import BudgetCard from './BudgetCard';
+import { useNav } from '../../App';
 import { useAccounts, useTransactions } from '../../hooks/useFinanceData';
 import {
   netWorth,
@@ -17,6 +19,7 @@ import { loadSampleData } from '../../utils/sampleData';
 export default function Dashboard() {
   const { accounts } = useAccounts();
   const { transactions } = useTransactions();
+  const { go } = useNav();
 
   const total = useMemo(() => netWorth(accounts), [accounts]);
   const mom = useMemo(() => rollingOverRolling(transactions, 30), [transactions]);
@@ -80,6 +83,8 @@ export default function Dashboard() {
           signed
         />
       </section>
+
+      <BudgetCard onOpen={() => go('budgets')} />
 
       <SpendingChart transactions={transactions} days={30} />
 
