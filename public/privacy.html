@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5f1ea" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Privacy Policy · Ledger</title>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <style>
+      :root {
+        --bg: #f5f1ea;
+        --surface: #ffffff;
+        --surface-warm: #faf6ed;
+        --border: #ebe4d6;
+        --ink: #3c3223;
+        --ink-muted: #7a6f5c;
+        --ink-subtle: #a89e8a;
+        --accent: #a08968;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+          Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 48px 24px 96px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        color: var(--ink);
+        margin-bottom: 32px;
+      }
+      .brand .glyph {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 22px;
+        color: var(--accent);
+      }
+      .brand .name {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 18px;
+        font-weight: 500;
+      }
+      h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-weight: 500;
+        font-size: clamp(32px, 6vw, 44px);
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+      }
+      .sub {
+        color: var(--ink-muted);
+        font-size: 14px;
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-weight: 500;
+        font-size: 22px;
+        letter-spacing: -0.01em;
+        margin: 36px 0 8px;
+      }
+      p, li {
+        color: var(--ink);
+      }
+      p { margin: 0 0 12px; }
+      ul {
+        margin: 0 0 12px;
+        padding-left: 22px;
+      }
+      li { margin-bottom: 6px; }
+      strong { font-weight: 600; }
+      code, .mono {
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+        font-size: 14px;
+        background: var(--surface-warm);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 28px;
+      }
+      .meta {
+        color: var(--ink-subtle);
+        font-size: 13px;
+      }
+      a { color: var(--accent); }
+      hr {
+        border: 0;
+        border-top: 1px solid var(--border);
+        margin: 32px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <a class="brand" href="/">
+        <span class="glyph">◐</span>
+        <span class="name">Ledger</span>
+      </a>
+
+      <h1>Privacy Policy</h1>
+      <p class="sub">Last updated May 4, 2026</p>
+
+      <div class="card">
+        <h2>What Ledger is</h2>
+        <p>
+          Ledger is a single-user personal finance journal. It is intended for the
+          private use of its operator and is not offered as a public service. Data
+          handled by this application belongs to its operator and is not shared
+          beyond the third-party services described below.
+        </p>
+
+        <h2>What data is handled</h2>
+        <ul>
+          <li>
+            <strong>Manually entered records.</strong> Accounts, transactions,
+            goals, and bills you enter by hand. These live in your browser&rsquo;s
+            <code>localStorage</code> on the device where you entered them. They
+            are never transmitted to any server operated by Ledger.
+          </li>
+          <li>
+            <strong>Linked-bank access tokens.</strong> When you connect a bank
+            through Plaid, Plaid returns a long-lived access token. That token is
+            stored in a Supabase database operated by Ledger&rsquo;s operator so
+            that the server can fetch fresh transactions on your behalf. The
+            token is never exposed to your browser.
+          </li>
+          <li>
+            <strong>Bank transactions and balances.</strong> When you trigger a
+            sync, the server pulls your latest balances and transactions from
+            Plaid and returns them to your browser, where they are stored in
+            <code>localStorage</code>. They are not retained on the server.
+          </li>
+          <li>
+            <strong>Application access key.</strong> A shared secret you set in
+            the app&rsquo;s environment configuration is stored in your
+            browser&rsquo;s <code>localStorage</code> after you enter it once.
+            It is sent as an <code>Authorization</code> header on requests to
+            the app&rsquo;s own backend.
+          </li>
+        </ul>
+
+        <h2>What we don&rsquo;t do</h2>
+        <ul>
+          <li>No advertising, no tracking pixels, no third-party analytics.</li>
+          <li>No selling, sharing, or licensing of data to anyone.</li>
+          <li>No accounts beyond the single operator. There is no sign-up.</li>
+          <li>
+            Bank credentials never touch Ledger or its servers. They are
+            submitted directly to Plaid through Plaid&rsquo;s hosted form.
+          </li>
+        </ul>
+
+        <h2>Third-party services</h2>
+        <ul>
+          <li>
+            <strong>Plaid.</strong> Bank connectivity. Plaid is the data
+            processor for bank credentials, account metadata, balances, and
+            transactions. See
+            <a href="https://plaid.com/legal/" target="_blank" rel="noopener">
+              Plaid&rsquo;s privacy policy
+            </a>.
+          </li>
+          <li>
+            <strong>Supabase.</strong> Database hosting (PostgreSQL). Stores
+            only the Plaid access tokens described above. See
+            <a href="https://supabase.com/privacy" target="_blank" rel="noopener">
+              Supabase&rsquo;s privacy policy
+            </a>.
+          </li>
+          <li>
+            <strong>Netlify.</strong> Static site hosting and serverless function
+            execution. Standard request logs are retained for operational
+            purposes. See
+            <a href="https://www.netlify.com/privacy/" target="_blank" rel="noopener">
+              Netlify&rsquo;s privacy policy
+            </a>.
+          </li>
+        </ul>
+
+        <h2>Data retention and deletion</h2>
+        <p>
+          Linked-bank access tokens are removed from Supabase the moment you
+          disconnect a bank in <em>Settings &rarr; Linked banks</em>. Doing so
+          also calls Plaid&rsquo;s
+          <code>/item/remove</code> endpoint to revoke the token at Plaid.
+          Imported transactions remain on your device (so you don&rsquo;t lose
+          history) until you clear them via <em>Settings &rarr; Clear all data</em>
+          or by clearing your browser&rsquo;s site data.
+        </p>
+
+        <h2>Security</h2>
+        <p>
+          All traffic is served over HTTPS. The app&rsquo;s backend is gated by a
+          shared secret that must be present on every request; without it the
+          backend returns <code>401 Unauthorized</code> and refuses to act.
+          Plaid access tokens are stored in a private Supabase project that uses
+          a service-role credential held only on the server.
+        </p>
+
+        <h2>Children&rsquo;s privacy</h2>
+        <p>
+          This application is intended for personal use by adults. It is not
+          directed to children under 13.
+        </p>
+
+        <h2>Changes to this policy</h2>
+        <p>
+          This document may be updated as the application evolves. The
+          &ldquo;Last updated&rdquo; date at the top reflects the most recent
+          revision.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          For privacy questions related to this application, contact the operator
+          via the application&rsquo;s source repository on GitHub.
+        </p>
+      </div>
+
+      <hr />
+      <p class="meta">
+        Ledger &middot; <a href="/">Return to app</a>
+      </p>
+    </main>
+  </body>
+</html>

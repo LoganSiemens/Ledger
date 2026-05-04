@@ -16,6 +16,12 @@
   status = 200
   force = true
 
+# Pretty URL for the static privacy page
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy.html"
+  status = 200
+
 [[headers]]
   for = "/sw.js"
   [headers.values]
