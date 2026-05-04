@@ -56,3 +56,23 @@ export async function importFromFile(file, opts = {}) {
 export function clearAll() {
   localAdapter.clear();
 }
+
+/**
+ * Removes manually-entered accounts and transactions only.
+ * Plaid-linked records (source === 'plaid') and everything else (bills,
+ * goals, settings, linked-bank metadata) stays put.
+ */
+export function clearManualEntries() {
+  const accounts = (localAdapter.get('accounts') || []).filter(
+    (a) => a.source === 'plaid',
+  );
+  const transactions = (localAdapter.get('transactions') || []).filter(
+    (t) => t.source === 'plaid',
+  );
+  localAdapter.set('accounts', accounts);
+  localAdapter.set('transactions', transactions);
+  return {
+    accounts: accounts.length,
+    transactions: transactions.length,
+  };
+}

@@ -1,11 +1,17 @@
 import { useRef, useState } from 'react';
-import { Download, Upload, AlertTriangle } from 'lucide-react';
-import { downloadExport, importFromFile, clearAll } from '../../utils/exportImport';
+import { Download, Upload, AlertTriangle, Eraser } from 'lucide-react';
+import {
+  downloadExport,
+  importFromFile,
+  clearAll,
+  clearManualEntries,
+} from '../../utils/exportImport';
 
 export default function ImportExport() {
   const fileRef = useRef(null);
   const [status, setStatus] = useState(null);
   const [confirmingClear, setConfirmingClear] = useState(false);
+  const [confirmingManual, setConfirmingManual] = useState(false);
 
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
@@ -28,6 +34,15 @@ export default function ImportExport() {
     clearAll();
     setConfirmingClear(false);
     setStatus({ kind: 'ok', msg: 'All data cleared.' });
+  };
+
+  const handleClearManual = () => {
+    const counts = clearManualEntries();
+    setConfirmingManual(false);
+    setStatus({
+      kind: 'ok',
+      msg: `Manual entries cleared. Kept ${counts.accounts} linked account${counts.accounts === 1 ? '' : 's'} and ${counts.transactions} synced transaction${counts.transactions === 1 ? '' : 's'}.`,
+    });
   };
 
   return (
@@ -73,10 +88,43 @@ export default function ImportExport() {
 
       <div style={styles.danger}>
         <div style={styles.dangerRow}>
+          <Eraser size={16} color="var(--ink-muted)" />
+          <h4 style={styles.h4}>Clear manual entries</h4>
+        </div>
+        <p style={styles.sub}>
+          Removes only manually-entered accounts and transactions (and any sample data).
+          Plaid-linked accounts and synced transactions stay.
+        </p>
+        {!confirmingManual ? (
+          <button
+            className="tap"
+            style={styles.btn}
+            onClick={() => setConfirmingManual(true)}
+          >
+            Clear manual entries
+          </button>
+        ) : (
+          <div style={styles.row}>
+            <button className="tap" style={styles.btnDangerSolid} onClick={handleClearManual}>
+              Yes, clear them
+            </button>
+            <button
+              className="tap"
+              style={styles.btn}
+              onClick={() => setConfirmingManual(false)}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={{ ...styles.danger, marginTop: 16 }}>
+        <div style={styles.dangerRow}>
           <AlertTriangle size={16} color="var(--negative)" />
           <h4 style={styles.h4}>Danger zone</h4>
         </div>
-        <p style={styles.sub}>Removes all transactions, accounts, goals, and settings.</p>
+        <p style={styles.sub}>Removes everything on this device — manual + synced. Linked banks stay connected on the server.</p>
         {!confirmingClear ? (
           <button
             className="tap"
