@@ -20,6 +20,7 @@ export const theme = {
       Health: '#b08bbb',
       Income: '#7a9b76',
       Bills: '#c4956c',
+      Transfer: '#9aa5af',
       Other: '#9a9a9a',
     },
   },

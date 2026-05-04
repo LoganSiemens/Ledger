@@ -1,5 +1,7 @@
-import { ACCOUNT_GROUPS, getAccountType } from './categories';
+import { ACCOUNT_GROUPS, getAccountType, isTransfer } from './categories';
 import { fromISO, isSameMonth } from './dates';
+
+const isFlowTx = (t) => !isTransfer(t.category);
 
 /**
  * Net worth = sum of cash + investment balances minus debt balances.
@@ -39,6 +41,7 @@ export function monthlyFlow(transactions = [], date = new Date()) {
   let income = 0;
   let expense = 0;
   for (const t of transactions) {
+    if (!isFlowTx(t)) continue;
     const d = fromISO(t.date);
     if (!isSameMonth(d, date)) continue;
     const amt = Number(t.amount) || 0;
@@ -63,6 +66,7 @@ export function rollingFlow(transactions = [], days = 30, endDate = new Date()) 
   let income = 0;
   let expense = 0;
   for (const t of transactions) {
+    if (!isFlowTx(t)) continue;
     const d = fromISO(t.date);
     if (d < start || d > end) continue;
     const amt = Number(t.amount) || 0;
@@ -138,6 +142,7 @@ export function dailyFlow(transactions = [], days = 30, endDate = new Date()) {
     buckets.set(iso, row);
   }
   for (const t of transactions) {
+    if (!isFlowTx(t)) continue;
     const row = buckets.get(t.date);
     if (!row) continue;
     const amt = Number(t.amount) || 0;
@@ -164,6 +169,7 @@ export function spendingByCategory(transactions = [], days = 30, endDate = new D
   start.setDate(start.getDate() - days + 1);
   start.setHours(0, 0, 0, 0);
   for (const t of transactions) {
+    if (!isFlowTx(t)) continue;
     const amt = Number(t.amount) || 0;
     if (amt >= 0) continue;
     const d = fromISO(t.date);

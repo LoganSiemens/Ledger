@@ -5,19 +5,19 @@ import { requireApiKey, jsonResponse, errorResponse, safeHandler } from './_shar
 /**
  * Pulls latest accounts + incremental transactions for every linked item.
  *
+ * Query params:
+ *   ?full=1    Reset every item's sync cursor first, so Plaid returns the
+ *              entire transaction history again. Use this to re-pull after
+ *              fixing categorization, sign, or other normalization rules.
+ *
  * Response:
  *  {
- *    accounts:    [{ plaidAccountId, plaidItemId, name, type, subtype, balance, mask, institutionName }],
+ *    accounts:    [...],
  *    added:       [transaction…],
  *    modified:    [transaction…],
  *    removed:     [{ plaidTxId }],
+ *    full:        boolean,   // whether this was a forced full re-pull
  *  }
- *
- * Transactions are normalized to Ledger's shape:
- *   { plaidTxId, plaidAccountId, date, amount (signed), description, category, accountId:null }
- *
- * Sign convention: Plaid returns expenses as positive numbers; we flip them so
- * money OUT is negative and money IN is positive (matches the manual-entry model).
  */
 export default safeHandler(async (req) => {
   if (req.method !== 'POST') return jsonResponse({ error: 'method not allowed' }, 405);
@@ -25,13 +25,25 @@ export default safeHandler(async (req) => {
   if (denied) return denied;
 
   try {
+    const url = new URL(req.url);
+    const full = url.searchParams.get('full') === '1';
+
     const supabase = supabaseAdmin();
+
+    if (full) {
+      const { error: resetErr } = await supabase
+        .from('plaid_items')
+        .update({ sync_cursor: null })
+        .neq('item_id', '');
+      if (resetErr) throw resetErr;
+    }
+
     const { data: items, error } = await supabase
       .from('plaid_items')
       .select('item_id, institution_name, access_token, sync_cursor');
     if (error) throw error;
     if (!items || items.length === 0) {
-      return jsonResponse({ accounts: [], added: [], modified: [], removed: [] });
+      return jsonResponse({ accounts: [], added: [], modified: [], removed: [], full });
     }
 
     const client = plaidClient();
@@ -100,6 +112,7 @@ export default safeHandler(async (req) => {
       added: allAdded,
       modified: allModified,
       removed: allRemoved,
+      full,
     });
   } catch (err) {
     return errorResponse(err);
@@ -108,13 +121,22 @@ export default safeHandler(async (req) => {
 
 /**
  * Map Plaid's personal-finance category to Ledger's flat list.
- * Plaid uses a 2-level hierarchy (`primary` and `detailed`); we collapse it.
+ *
+ * Important: TRANSFER_IN and TRANSFER_OUT, plus the credit-card-payment
+ * detailed code, are mapped to the 'Transfer' category. Transfers are
+ * money moving between the user's own accounts and must NOT be counted as
+ * income or spending — otherwise a credit-card payment shows up as both a
+ * spend (debit on checking) and an income (credit on the card).
  */
 function mapPlaidCategory(t) {
   const pfc = t.personal_finance_category?.primary;
+  const detailed = t.personal_finance_category?.detailed;
+
+  if (pfc === 'TRANSFER_IN' || pfc === 'TRANSFER_OUT') return 'Transfer';
+  if (detailed === 'LOAN_PAYMENTS_CREDIT_CARD_PAYMENT') return 'Transfer';
+
   switch (pfc) {
     case 'INCOME':
-    case 'TRANSFER_IN':
       return 'Income';
     case 'RENT_AND_UTILITIES':
     case 'HOME_IMPROVEMENT':

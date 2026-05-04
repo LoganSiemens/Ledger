@@ -46,6 +46,7 @@ export const api = {
   removeItem: (itemId) =>
     request(`/items?item_id=${encodeURIComponent(itemId)}`, { method: 'DELETE' }),
   sync: () => request('/sync', { method: 'POST' }),
+  fullResync: () => request('/sync?full=1', { method: 'POST' }),
 };
 
 export { ApiError, API_KEY_STORAGE };

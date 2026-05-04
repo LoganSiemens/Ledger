@@ -7,12 +7,16 @@ import {
   Briefcase,
   Receipt,
   CircleDot,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { theme } from '../styles/theme';
 
 /**
  * Spending and income categories.
- * `kind` distinguishes income from expense for default behavior.
+ * `kind`:
+ *   - 'income'   counts toward income totals
+ *   - 'expense'  counts toward spending totals
+ *   - 'transfer' excluded from both (internal money movement)
  */
 export const CATEGORIES = [
   { id: 'Income', label: 'Income', kind: 'income', icon: Briefcase },
@@ -22,12 +26,14 @@ export const CATEGORIES = [
   { id: 'Transport', label: 'Transport', kind: 'expense', icon: Car },
   { id: 'Health', label: 'Health', kind: 'expense', icon: Heart },
   { id: 'Bills', label: 'Bills', kind: 'expense', icon: Receipt },
+  { id: 'Transfer', label: 'Transfer', kind: 'transfer', icon: ArrowLeftRight },
   { id: 'Other', label: 'Other', kind: 'expense', icon: CircleDot },
 ];
 
 const byId = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
 
 export const getCategory = (id) => byId[id] || byId.Other;
+export const isTransfer = (id) => byId[id]?.kind === 'transfer';
 export const categoryColor = (id) => theme.colors.categories[id] || theme.colors.categories.Other;
 export const categoryIcon = (id) => getCategory(id).icon;
 

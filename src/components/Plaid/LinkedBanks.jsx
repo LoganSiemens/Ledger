@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Building2, RefreshCw, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { Building2, RefreshCw, Trash2, Loader2, AlertTriangle, RotateCw } from 'lucide-react';
 import LinkButton from './LinkButton';
 import { api } from '../../utils/api';
 import { applySyncResponse } from '../../utils/syncMerge';
@@ -8,6 +8,7 @@ export default function LinkedBanks() {
   const [items, setItems] = useState(null);
   const [loadErr, setLoadErr] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [resyncing, setResyncing] = useState(false);
   const [removing, setRemoving] = useState(null);
   const [status, setStatus] = useState(null);
   const [lastSyncAt, setLastSyncAt] = useState(null);
@@ -55,6 +56,30 @@ export default function LinkedBanks() {
       setStatus({ kind: 'err', msg: err.message });
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const onFullResync = async () => {
+    if (
+      !window.confirm(
+        'Re-pull every transaction from Plaid with the latest categorization rules. This replaces all synced transactions on this device. (Manual entries are untouched.) Continue?',
+      )
+    )
+      return;
+    setResyncing(true);
+    setStatus(null);
+    try {
+      const resp = await api.fullResync();
+      const counts = applySyncResponse(resp);
+      setStatus({
+        kind: 'ok',
+        msg: `Re-pulled ${counts.added} transactions across ${counts.accounts} account${counts.accounts === 1 ? '' : 's'}.`,
+      });
+      setLastSyncAt(new Date());
+    } catch (err) {
+      setStatus({ kind: 'err', msg: err.message });
+    } finally {
+      setResyncing(false);
     }
   };
 
@@ -145,22 +170,41 @@ export default function LinkedBanks() {
           onError={(msg) => setStatus({ kind: 'err', msg })}
         />
         {items && items.length > 0 && (
-          <button
-            className="btn"
-            type="button"
-            onClick={onSync}
-            disabled={syncing}
-          >
-            {syncing ? (
-              <>
-                <Loader2 size={16} className="spin" /> Syncing…
-              </>
-            ) : (
-              <>
-                <RefreshCw size={16} /> Sync now
-              </>
-            )}
-          </button>
+          <>
+            <button
+              className="btn"
+              type="button"
+              onClick={onSync}
+              disabled={syncing || resyncing}
+            >
+              {syncing ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Syncing…
+                </>
+              ) : (
+                <>
+                  <RefreshCw size={16} /> Sync now
+                </>
+              )}
+            </button>
+            <button
+              className="btn"
+              type="button"
+              onClick={onFullResync}
+              disabled={syncing || resyncing}
+              title="Re-pull every transaction with the latest categorization"
+            >
+              {resyncing ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Re-pulling…
+                </>
+              ) : (
+                <>
+                  <RotateCw size={16} /> Re-categorize
+                </>
+              )}
+            </button>
+          </>
         )}
       </div>
 

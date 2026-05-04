@@ -24,6 +24,11 @@ function plaidTypeToInternal(type, subtype) {
 /**
  * Apply the /sync response against localStorage. Pure local merge — no network.
  * Returns counts so the UI can show a useful toast.
+ *
+ * When `resp.full` is true (the server reset cursors and returned the entire
+ * history), all existing source='plaid' transactions are dropped first so the
+ * fresh response replaces them cleanly — that's how re-categorization rolls
+ * out without leaving stale rows around.
  */
 export function applySyncResponse(resp) {
   const incoming = resp || {};
@@ -31,6 +36,7 @@ export function applySyncResponse(resp) {
   const added = incoming.added || [];
   const modified = incoming.modified || [];
   const removed = incoming.removed || [];
+  const isFull = incoming.full === true;
 
   // ---- Accounts ----
   const existing = localAdapter.get('accounts') || [];
@@ -68,8 +74,13 @@ export function applySyncResponse(resp) {
   const byPlaidTxId = new Map();
   const manualTx = [];
   for (const t of existingTx) {
-    if (t.plaidTxId) byPlaidTxId.set(t.plaidTxId, t);
-    else manualTx.push(t);
+    if (t.plaidTxId) {
+      // On a full resync, drop existing Plaid rows so fresh ones (with
+      // up-to-date categorization) replace them instead of being preserved.
+      if (!isFull) byPlaidTxId.set(t.plaidTxId, t);
+    } else {
+      manualTx.push(t);
+    }
   }
 
   const upsert = (t) => {
