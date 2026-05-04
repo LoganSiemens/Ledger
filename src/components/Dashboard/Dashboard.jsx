@@ -4,6 +4,7 @@ import PageHeader from '../common/PageHeader';
 import Empty from '../common/Empty';
 import Money from '../common/Money';
 import TxRow from '../common/TxRow';
+import SpendingChart from './SpendingChart';
 import { useAccounts, useTransactions } from '../../hooks/useFinanceData';
 import {
   netWorth,
@@ -79,6 +80,8 @@ export default function Dashboard() {
           signed
         />
       </section>
+
+      <SpendingChart transactions={transactions} days={30} />
 
       <section style={{ marginTop: 28 }}>
         <header style={styles.sectionHead}>

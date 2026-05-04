@@ -118,3 +118,145 @@ export function transactionsByDate(transactions = []) {
     a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
   );
 }
+
+/**
+ * Daily spending totals for a window. Returns an array aligned with each
+ * day in the window, keyed by ISO date.
+ *   [{ date: '2026-04-05', spending: 42.18, income: 0 }, ...]
+ */
+export function dailyFlow(transactions = [], days = 30, endDate = new Date()) {
+  const out = [];
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+  const buckets = new Map();
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = new Date(end);
+    d.setDate(d.getDate() - i);
+    const iso = isoOf(d);
+    const row = { date: iso, spending: 0, income: 0 };
+    out.push(row);
+    buckets.set(iso, row);
+  }
+  for (const t of transactions) {
+    const row = buckets.get(t.date);
+    if (!row) continue;
+    const amt = Number(t.amount) || 0;
+    if (amt < 0) row.spending += -amt;
+    else row.income += amt;
+  }
+  return out;
+}
+
+function isoOf(d) {
+  const tz = d.getTimezoneOffset() * 60_000;
+  return new Date(d.getTime() - tz).toISOString().slice(0, 10);
+}
+
+/**
+ * Spending grouped by category for a window.
+ * Returns [{ category, total }, ...] sorted descending by total.
+ */
+export function spendingByCategory(transactions = [], days = 30, endDate = new Date()) {
+  const totals = new Map();
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end);
+  start.setDate(start.getDate() - days + 1);
+  start.setHours(0, 0, 0, 0);
+  for (const t of transactions) {
+    const amt = Number(t.amount) || 0;
+    if (amt >= 0) continue;
+    const d = fromISO(t.date);
+    if (d < start || d > end) continue;
+    const cat = t.category || 'Other';
+    totals.set(cat, (totals.get(cat) || 0) + -amt);
+  }
+  return [...totals.entries()]
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Goal progress + on-track status.
+ * onTrack: null when there's no targetDate; otherwise true/false.
+ * suggestedMonthly: null when no targetDate; otherwise the contribution needed
+ * each remaining month to hit the target.
+ */
+export function goalProgress(goal, today = new Date()) {
+  const target = Number(goal.targetAmount) || 0;
+  const current = Number(goal.currentAmount) || 0;
+  const pct = target > 0 ? Math.min(1, current / target) : current > 0 ? 1 : 0;
+
+  if (!goal.targetDate) {
+    return { pct, onTrack: null, suggestedMonthly: null, daysLeft: null };
+  }
+  const target_d = fromISO(goal.targetDate);
+  const today_d = new Date(today);
+  today_d.setHours(0, 0, 0, 0);
+  target_d.setHours(0, 0, 0, 0);
+
+  const totalDays = Math.max(
+    1,
+    Math.round((target_d - fromISO(goal.createdAt || goal.targetDate)) / 86_400_000),
+  );
+  const elapsed = Math.max(
+    0,
+    Math.round((today_d - fromISO(goal.createdAt || goal.targetDate)) / 86_400_000),
+  );
+  const expectedPct = Math.min(1, elapsed / totalDays);
+  const onTrack = pct >= expectedPct - 0.05;
+
+  const daysLeft = Math.max(0, Math.round((target_d - today_d) / 86_400_000));
+  const monthsLeft = Math.max(1, daysLeft / 30);
+  const remaining = Math.max(0, target - current);
+  const suggestedMonthly = remaining / monthsLeft;
+
+  return { pct, onTrack, suggestedMonthly, daysLeft };
+}
+
+/**
+ * For a bill with a dueDay, compute the next occurrence on or after `from`.
+ * Handles months that don't have day 31 etc. by clamping to last day.
+ */
+export function nextBillDue(bill, from = new Date()) {
+  const day = clampDayForMonth(bill.dueDay, from.getFullYear(), from.getMonth());
+  const candidate = new Date(from.getFullYear(), from.getMonth(), day);
+  candidate.setHours(0, 0, 0, 0);
+  const today = new Date(from);
+  today.setHours(0, 0, 0, 0);
+  if (candidate >= today) return candidate;
+  // Next month
+  const nm = from.getMonth() + 1;
+  const ny = from.getFullYear() + (nm > 11 ? 1 : 0);
+  const nmIdx = nm % 12;
+  return new Date(ny, nmIdx, clampDayForMonth(bill.dueDay, ny, nmIdx));
+}
+
+function clampDayForMonth(day, year, monthIdx) {
+  const last = new Date(year, monthIdx + 1, 0).getDate();
+  return Math.min(day, last);
+}
+
+export function monthKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Bills due within `days` from `from`, sorted ascending. Each entry includes
+ * the next due date and whether it's been paid for that month.
+ */
+export function upcomingBills(bills = [], days = 30, from = new Date()) {
+  const horizon = new Date(from);
+  horizon.setDate(horizon.getDate() + days);
+  return bills
+    .map((b) => {
+      const due = nextBillDue(b, from);
+      return { bill: b, due, monthKey: monthKey(due) };
+    })
+    .filter(({ due }) => due <= horizon)
+    .map((row) => ({
+      ...row,
+      paid: (row.bill.paidMonths || []).includes(row.monthKey),
+    }))
+    .sort((a, b) => a.due - b.due);
+}
